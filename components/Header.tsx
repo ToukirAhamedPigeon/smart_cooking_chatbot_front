@@ -24,9 +24,13 @@ export const Header: React.FC = () => {
       <div className="flex items-center gap-3">
         <motion.div 
           whileHover={{ rotate: 10 }}
-          className="w-10 h-10 bg-bakingYellow rounded-full flex items-center justify-center shadow-inner"
+          className="w-14 h-14  rounded-full flex items-center justify-center shadow-md overflow-hidden"
         >
-          <span className="text-lg font-bold text-chocolate italic">SC</span>
+          <img 
+            src="/logo.png" 
+            alt="Smart Cooking Logo" 
+            className="w-14 h-14 object-contain"
+          />
         </motion.div>
         <div>
           <h1 className="text-lg font-bold text-chocolate dark:text-yellow-50 leading-tight">Smart Cooking</h1>

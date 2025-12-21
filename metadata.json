@@ -1,5 +1,8 @@
+
 {
   "name": "Smart Cooking Chatbot",
   "description": "A delightful, responsive baking-themed customer support chat interface with dark/light mode support, user registration, and real-time messaging animations.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

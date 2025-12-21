@@ -33,8 +33,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLogin }) => {
           className="w-full max-w-md bg-mildBg dark:bg-stone-900 rounded-3xl overflow-hidden shadow-2xl border-4 border-bakingYellow/30"
         >
           <div className="p-8 flex flex-col items-center text-center">
-            <div className="w-20 h-20 bg-bakingYellow rounded-full flex items-center justify-center mb-6 shadow-lg shadow-bakingYellow/20">
-              <span className="text-3xl font-bold text-chocolate italic">SC</span>
+            <div className="w-24 h-24 bg-bakingYellow rounded-full flex items-center justify-center mb-6 shadow-lg shadow-bakingYellow/20 overflow-hidden">
+               <img 
+                src="https://img.icons8.com/color/96/bakery.png" 
+                alt="Smart Cooking Logo" 
+                className="w-16 h-16 object-contain"
+              />
             </div>
             
             <h2 className="text-2xl font-bold text-chocolate dark:text-yellow-50 mb-2">Welcome to Smart Cooking!</h2>
