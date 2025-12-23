@@ -1,13 +1,33 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="manifest" href="/manifest.json">
-    <!-- Add theme-color meta tag -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Smart Cooking Customer Support Chatbot">
+    <meta name="application-name" content="SmartCookingChat">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
+    
+    <!-- Apple-specific meta tags for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SmartCookingChat">
+    
+    <!-- Theme Color for different platforms -->
     <meta name="theme-color" content="#D2691E">
-    <link rel="icon" href="/logo_sm.png" type="image/x-icon" />
+    <meta name="msapplication-TileColor" content="#D2691E">
+    
+    <!-- Icons -->
+    <link rel="icon" href="/favicon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="/favicon-192.png">
+    
+    <!-- Safari Pinned Tab Icon -->
+    <link rel="mask-icon" href="/favicon-192.png" color="#D2691E">
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileImage" content="/favicon-192.png">
+    
     <title>Smart Cooking Support</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -44,20 +64,35 @@
         background: rgba(253, 224, 71, 0.1);
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "framer-motion": "https://esm.sh/framer-motion@^12.23.26",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
+    <script type="importmap">
+      {
+        "imports": {
+          "framer-motion": "https://esm.sh/framer-motion@^12.23.26",
+          "react/": "https://esm.sh/react@^19.2.3/",
+          "react": "https://esm.sh/react@^19.2.3",
+          "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="/index.css">
+  </head>
   <body class="bg-mildBg dark:bg-darkMildBg text-chocolate dark:text-yellow-50 transition-colors duration-300">
     <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <script type="module" src="/index.tsx"></script>
+    
+    <!-- PWA Installation Script -->
+    <script>
+      // Log PWA readiness
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          console.log('PWA: Service Worker supported');
+        });
+      }
+      
+      // Log display mode
+      window.addEventListener('DOMContentLoaded', () => {
+        console.log('Display mode:', window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser');
+      });
+    </script>
+  </body>
 </html>

@@ -25,6 +25,17 @@ const App: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    // Debug PWA features
+    console.log('PWA Debug Info:');
+    console.log('Service Worker support:', 'serviceWorker' in navigator);
+    console.log('BeforeInstallPrompt support:', 'beforeinstallprompt' in window);
+    console.log('Is installed?', window.matchMedia('(display-mode: standalone)').matches);
+    
+    // Check if HTTPS
+    console.log('Is HTTPS?', window.location.protocol === 'https:');
+  }, []);
+
   const handleLogin = useCallback(async (mobile: string) => {
     setCookie('user_mobile', mobile);
     setUser({ mobile });
