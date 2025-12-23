@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatBubble } from './ChatBubble';
@@ -8,16 +7,17 @@ import { CookieIcon } from './BakingIllustration';
 interface ChatWindowProps {
   messages: Message[];
   isTyping: boolean;
+  isLoading?: boolean;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isTyping }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isTyping, isLoading = false }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isTyping]);
+  }, [messages, isTyping, isLoading]);
 
   return (
     <div 
@@ -25,7 +25,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isTyping }) =>
       className="flex-1 overflow-y-auto px-4 py-6 chat-scrollbar space-y-2 scroll-smooth"
     >
       <AnimatePresence initial={false}>
-        {messages.length === 0 && (
+        {isLoading && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="h-full flex flex-col items-center justify-center text-center p-8"
+          >
+            <div className="w-12 h-12 border-4 border-bakingYellow border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-4 text-chocolate dark:text-yellow-50 font-medium">Loading chat history...</p>
+          </motion.div>
+        )}
+
+        {!isLoading && messages.length === 0 && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -35,12 +46,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isTyping }) =>
             <p className="mt-4 text-chocolate dark:text-yellow-50 font-medium">No messages yet. Ask me anything about baking!</p>
           </motion.div>
         )}
-        
-        {messages.map((msg) => (
+
+        {!isLoading && messages.map((msg) => (
           <ChatBubble key={msg.id} message={msg} />
         ))}
 
-        {isTyping && (
+        {isTyping && !isLoading && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
@@ -7,12 +6,14 @@ import { LoginModal } from './components/LoginModal';
 import { Message, User } from './types';
 import { getCookie, setCookie } from './utils/cookies';
 import { fetchChatHistory, sendChatMessage } from './utils/api';
+import PWAInstaller from './components/PWAInstaller';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   // Check for existing session
   useEffect(() => {
@@ -28,20 +29,24 @@ const App: React.FC = () => {
     setCookie('user_mobile', mobile);
     setUser({ mobile });
     setIsLoginModalOpen(false);
-    
-    const history = await fetchChatHistory(mobile);
-    setMessages(history);
+    setIsLoadingHistory(true);
+
+    try {
+      const history = await fetchChatHistory(mobile);
+      setMessages(history);
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
   }, []);
 
   const handleLogout = () => {
-  // ১। কুকি মুছে দাও
-  setCookie('user_mobile', '', -1); // expire the cookie
-  // ২। ইউজার স্টেট রিসেট
-  setUser(null);
-  setMessages([]);
-  // ৩। লগইন মডাল খোলা
-  setIsLoginModalOpen(true);
-};
+    setCookie('user_mobile', '', -1); // expire cookie
+    setUser(null);
+    setMessages([]);
+    setIsLoginModalOpen(true);
+  };
 
   const handleSendMessage = async (text: string) => {
     if (!user) return;
@@ -50,7 +55,7 @@ const App: React.FC = () => {
       id: Date.now().toString(),
       sender: 'user',
       text,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMsg]);
@@ -64,15 +69,15 @@ const App: React.FC = () => {
         text: result.reply,
         timestamp: new Date(),
         source: result.source,
-        sentiment: result.sentiment
+        sentiment: result.sentiment,
       };
       setMessages(prev => [...prev, botMsg]);
     } catch (error) {
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: "I'm sorry, I'm having trouble connecting to the baking station. Please try again in a moment!",
-        timestamp: new Date()
+        text: "I'm sorry, I'm having trouble connecting. Please try again in a moment!",
+        timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
@@ -82,31 +87,25 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-mildBg dark:bg-darkMildBg transition-colors duration-300">
-      <Header>
-        {user && (
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-          >
-            Switch User
-          </button>
-        )}
-      </Header>
-      
+      <Header user={user} onLogout={handleLogout} />
+
       <main className="flex-1 flex flex-col relative w-full max-w-4xl mx-auto overflow-hidden">
-        {/* Decorative elements */}
         <div className="absolute top-0 left-0 w-32 h-32 bg-bakingYellow/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-chocolate/5 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl pointer-events-none"></div>
 
-        <ChatWindow messages={messages} isTyping={isTyping} />
-        
-        <MessageInput onSendMessage={handleSendMessage} disabled={isTyping} />
+        <ChatWindow 
+          messages={messages} 
+          isTyping={isTyping} 
+          isLoading={isLoadingHistory} 
+        />
+        <MessageInput onSendMessage={handleSendMessage} disabled={isTyping || isLoadingHistory} />
       </main>
 
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onLogin={handleLogin} 
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onLogin={handleLogin}
       />
+      <PWAInstaller />
     </div>
   );
 };
