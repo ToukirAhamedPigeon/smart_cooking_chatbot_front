@@ -4,20 +4,33 @@ console.log('Service Worker loaded');
 
 self.addEventListener('install', (event) => {
   console.log('Service Worker installing...');
-  // Activate immediately
-  self.skipWaiting();
+  self.skipWaiting(); // activate immediately
 });
 
 self.addEventListener('activate', (event) => {
   console.log('Service Worker activated');
-  // Take control of all clients immediately
-  self.clients.claim();
+  self.clients.claim(); // take control immediately
 });
 
 self.addEventListener('fetch', (event) => {
-  // Optional: implement caching here
-  // Example:
-  // event.respondWith(
-  //   caches.match(event.request).then(response => response || fetch(event.request))
-  // );
+  event.respondWith(
+    caches.open('static-v1').then(cache =>
+      cache.match(event.request).then(response => {
+        // Return cached response if available
+        if (response) return response;
+
+        // Otherwise fetch from network and cache it
+        return fetch(event.request).then(networkResponse => {
+          // Only cache successful GET requests
+          if (event.request.method === 'GET' && networkResponse.status === 200) {
+            cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        }).catch(() => {
+          // Optionally return a fallback for failed requests
+          return caches.match('/offline.html'); // optional offline page
+        });
+      })
+    )
+  );
 });
