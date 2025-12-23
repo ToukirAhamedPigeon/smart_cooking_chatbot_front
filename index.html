@@ -131,33 +131,10 @@
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
     
-    <!-- PWA Installation Script -->
+    <!-- PWA Installation Script with Chrome Desktop Address Bar Support -->
     <script>
       // Store PWA install event globally
       window.deferredPrompt = null;
-      let installButtonVisible = true;
-      
-      // Check if user has hidden the install button before
-      function shouldShowInstallButton() {
-        const hidden = localStorage.getItem('pwa-install-button-hidden');
-        if (hidden === 'true') {
-          console.log('ℹ️ User has hidden install button previously');
-          return false;
-        }
-        return true;
-      }
-      
-      // Save hide preference
-      function hideInstallButtonPermanently() {
-        localStorage.setItem('pwa-install-button-hidden', 'true');
-        installButtonVisible = false;
-      }
-      
-      // Reset hide preference (for testing)
-      function resetInstallButtonPreference() {
-        localStorage.removeItem('pwa-install-button-hidden');
-        installButtonVisible = true;
-      }
       
       // Listen for beforeinstallprompt event
       window.addEventListener('beforeinstallprompt', (e) => {
@@ -170,20 +147,21 @@
         // Stash the event so it can be triggered later
         window.deferredPrompt = e;
         
-        // Show install button if not hidden
-        if (shouldShowInstallButton()) {
-          showInstallButton();
-        }
+        // This will trigger Chrome Desktop address bar icon automatically
+        console.log('✅ Chrome Desktop should now show install icon in address bar');
         
-        // FORCE Chrome Desktop to show address bar install icon
-        forceChromeDesktopInstallIcon();
+        // Dispatch event for React component
+        const event = new CustomEvent('pwa-install-available', { detail: e });
+        window.dispatchEvent(event);
+        
+        // Show Chrome Desktop hint if needed
+        showChromeDesktopHint();
       });
       
       // Listen for app installed event
       window.addEventListener('appinstalled', (evt) => {
         console.log('✅ App was installed successfully!');
         window.deferredPrompt = null;
-        hideInstallButton();
         
         // Show success message
         setTimeout(() => {
@@ -191,297 +169,78 @@
         }, 1000);
       });
       
-      // Function to force Chrome Desktop to show install icon in address bar
-      function forceChromeDesktopInstallIcon() {
+      // Function to help trigger Chrome Desktop address bar icon
+      function showChromeDesktopHint() {
         const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
         const isDesktop = !/Mobile|Android/i.test(navigator.userAgent);
         
         if (isChrome && isDesktop) {
-          console.log('💻 Chrome Desktop detected - attempting to trigger install icon');
+          console.log('💻 Chrome Desktop: Install icon should appear in address bar');
           
-          // Method 1: Trigger engagement by simulating user activity
-          simulateUserEngagement();
-          
-          // Method 2: Try to programmatically trigger install
+          // Create a hint notification
           setTimeout(() => {
-            console.log('🔄 Trying to trigger Chrome install icon...');
-            
-            // This might trigger the install icon in address bar
-            if (window.deferredPrompt && window.deferredPrompt.prompt) {
-              // Don't actually prompt, just show icon
-              console.log('✅ Chrome install prompt is available');
+            if (!document.getElementById('chrome-addressbar-hint')) {
+              const hint = document.createElement('div');
+              hint.id = 'chrome-addressbar-hint';
+              hint.innerHTML = `
+                <div style="
+                  position: fixed;
+                  top: 20px;
+                  right: 20px;
+                  background: #4285F4;
+                  color: white;
+                  padding: 12px 16px;
+                  border-radius: 12px;
+                  font-size: 14px;
+                  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                  z-index: 99997;
+                  animation: slideIn 0.5s ease;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  max-width: 320px;
+                  border-left: 4px solid #34A853;
+                ">
+                  <svg style="width: 24px; height: 24px; flex-shrink: 0;" viewBox="0 0 24 24">
+                    <path fill="white" d="M12,20L7,22L12,11L17,22L12,20M8,2H16L15,11L17,22L12,20L7,22L9,11L8,2Z"/>
+                  </svg>
+                  <div>
+                    <div style="font-weight: bold; margin-bottom: 4px;">Install Available</div>
+                    <div style="font-size: 12px; opacity: 0.9;">
+                      Look for the install icon (📱) in the Chrome address bar
+                    </div>
+                  </div>
+                  <button onclick="this.parentElement.parentElement.remove()" style="
+                    background: rgba(255,255,255,0.2);
+                    border: none;
+                    color: white;
+                    cursor: pointer;
+                    margin-left: auto;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    font-size: 18px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                  " title="Close">×</button>
+                </div>
+              `;
               
-              // Create a temporary button to show install is available
-              showChromeInstallHint();
+              document.body.appendChild(hint);
+              
+              // Auto-remove after 15 seconds
+              setTimeout(() => {
+                const element = document.getElementById('chrome-addressbar-hint');
+                if (element) {
+                  element.style.animation = 'fadeOut 0.3s ease';
+                  setTimeout(() => element.remove(), 300);
+                }
+              }, 15000);
             }
-          }, 2000);
+          }, 1000);
         }
-      }
-      
-      // Simulate user engagement (helps trigger Chrome's install icon)
-      function simulateUserEngagement() {
-        console.log('🔄 Simulating user engagement for Chrome PWA...');
-        
-        // Track time on page
-        let engagementTime = parseInt(localStorage.getItem('pwa-engagement-time') || '0');
-        engagementTime += 5; // Add 5 seconds
-        localStorage.setItem('pwa-engagement-time', engagementTime.toString());
-        
-        // Track visit count
-        let visitCount = parseInt(localStorage.getItem('pwa-visit-count') || '0');
-        visitCount++;
-        localStorage.setItem('pwa-visit-count', visitCount.toString());
-        
-        console.log(`📊 Engagement stats: ${engagementTime}s across ${visitCount} visits`);
-        
-        // If engagement criteria met, Chrome should show install icon
-        if (engagementTime > 30 && visitCount >= 2) {
-          console.log('✅ Chrome engagement criteria met - install icon should appear');
-        }
-      }
-      
-      // Show hint that Chrome install is available
-      function showChromeInstallHint() {
-        const isDesktop = !/Mobile|Android/i.test(navigator.userAgent);
-        
-        if (isDesktop) {
-          const hint = document.createElement('div');
-          hint.id = 'chrome-install-hint';
-          hint.innerHTML = `
-            <div style="
-              position: fixed;
-              top: 20px;
-              right: 20px;
-              background: #4285F4;
-              color: white;
-              padding: 10px 15px;
-              border-radius: 10px;
-              font-size: 13px;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-              z-index: 99997;
-              animation: slideIn 0.5s ease;
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              max-width: 300px;
-            ">
-              <svg style="width: 20px; height: 20px;" viewBox="0 0 24 24">
-                <path fill="white" d="M12,20L7,22L12,11L17,22L12,20M8,2H16L15,11L17,22L12,20L7,22L9,11L8,2Z"/>
-              </svg>
-              <div>
-                <div style="font-weight: bold;">Install Available</div>
-                <div style="font-size: 11px; opacity: 0.9;">Look for 📱 icon in address bar</div>
-              </div>
-              <button id="hint-close" style="
-                background: none;
-                border: none;
-                color: white;
-                cursor: pointer;
-                margin-left: auto;
-                padding: 2px 8px;
-                border-radius: 50%;
-                font-size: 16px;
-              ">×</button>
-            </div>
-          `;
-          
-          document.body.appendChild(hint);
-          
-          // Close hint when X is clicked
-          document.getElementById('hint-close').onclick = function() {
-            const element = document.getElementById('chrome-install-hint');
-            if (element) {
-              element.style.animation = 'fadeOut 0.3s ease';
-              setTimeout(() => element.remove(), 300);
-            }
-          };
-          
-          // Auto-remove after 10 seconds
-          setTimeout(() => {
-            const element = document.getElementById('chrome-install-hint');
-            if (element) {
-              element.style.animation = 'fadeOut 0.3s ease';
-              setTimeout(() => element.remove(), 300);
-            }
-          }, 10000);
-        }
-      }
-      
-      // Show install button with close option
-      function showInstallButton() {
-        if (!shouldShowInstallButton()) return;
-        
-        // Remove any existing button first
-        hideInstallButton();
-        
-        console.log('📱 Showing install button with close option');
-        
-        const installButton = document.createElement('div');
-        installButton.id = 'floating-install-button';
-        installButton.innerHTML = `
-          <div style="
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #FDE047, #D2691E);
-            color: black;
-            padding: 15px 20px;
-            border-radius: 25px;
-            font-weight: bold;
-            box-shadow: 0 6px 25px rgba(0,0,0,0.3);
-            z-index: 99999;
-            cursor: pointer;
-            animation: slideIn 0.5s ease, bounce 2s infinite 0.5s;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(255,255,255,0.3);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-width: 220px;
-          ">
-            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
-              <svg style="width: 24px; height: 24px;" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M19,9H16V3H9V9H5L12,16L19,9M5,18V20H19V18H5Z"/>
-              </svg>
-              <div style="text-align: left;">
-                <div style="font-weight: bold; font-size: 16px;">INSTALL APP</div>
-                <div style="font-size: 12px; opacity: 0.9;">Add to Home Screen</div>
-              </div>
-            </div>
-            <button id="install-close-btn" style="
-              background: rgba(0,0,0,0.2);
-              border: none;
-              color: black;
-              cursor: pointer;
-              width: 28px;
-              height: 28px;
-              border-radius: 50%;
-              font-size: 18px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              transition: all 0.2s ease;
-              flex-shrink: 0;
-            " title="Hide install button">×</button>
-          </div>
-        `;
-        
-        document.body.appendChild(installButton);
-        
-        // Install button click handler
-        installButton.onclick = function(e) {
-          // Don't trigger if close button was clicked
-          if (e.target.id === 'install-close-btn' || e.target.closest('#install-close-btn')) {
-            return;
-          }
-          
-          if (window.deferredPrompt) {
-            window.deferredPrompt.prompt();
-          } else {
-            showInstallGuide();
-          }
-        };
-        
-        // Close button click handler
-        document.getElementById('install-close-btn').onclick = function(e) {
-          e.stopPropagation();
-          hideInstallButton();
-          
-          // Ask user if they want to hide permanently
-          if (confirm('Hide install button?\n\n• "OK" = Hide permanently\n• "Cancel" = Hide for this session only')) {
-            hideInstallButtonPermanently();
-            alert('Install button hidden. You can reset this in browser console by typing: resetInstallButton()');
-          }
-        };
-        
-        // Hover effects
-        installButton.onmouseover = function() {
-          this.style.transform = 'scale(1.05)';
-          this.style.boxShadow = '0 8px 30px rgba(0,0,0,0.4)';
-        };
-        
-        installButton.onmouseout = function() {
-          this.style.transform = 'scale(1)';
-          this.style.boxShadow = '0 6px 25px rgba(0,0,0,0.3)';
-        };
-      }
-      
-      // Hide install button
-      function hideInstallButton() {
-        const button = document.getElementById('floating-install-button');
-        if (button) {
-          button.style.animation = 'fadeOut 0.3s ease';
-          setTimeout(() => {
-            if (button.parentNode) {
-              button.parentNode.removeChild(button);
-            }
-          }, 300);
-        }
-        
-        // Also hide Chrome hint if present
-        const hint = document.getElementById('chrome-install-hint');
-        if (hint) {
-          hint.style.animation = 'fadeOut 0.3s ease';
-          setTimeout(() => {
-            if (hint.parentNode) {
-              hint.parentNode.removeChild(hint);
-            }
-          }, 300);
-        }
-      }
-      
-      // Show install guide
-      function showInstallGuide() {
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        const isDesktop = !isMobile;
-        const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-        const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-        const isEdge = /Edg/.test(navigator.userAgent);
-        
-        let guide = '';
-        
-        if (isIOS) {
-          guide = `📱 Install on iOS Safari:
-1. Tap the Share button (📤) at bottom
-2. Scroll down → "Add to Home Screen"
-3. Tap "Add" in top right
-4. App will appear on home screen!`;
-        } else if (isMobile && isChrome) {
-          guide = `📱 Install on Android Chrome:
-1. Tap ⋮ menu in top right
-2. Select "Add to Home screen"
-3. Tap "Add" to install`;
-        } else if (isDesktop && (isChrome || isEdge)) {
-          guide = `💻 Install on ${isChrome ? 'Chrome' : 'Edge'} Desktop:
-IMPORTANT: Look for ONE of these:
-
-OPTION 1 - Address Bar Icon:
-• Look for the install icon (📱) in the address bar
-• It may take 30+ seconds of using the app to appear
-
-OPTION 2 - Browser Menu:
-• Click ⋮ menu (top-right) → "Install Smart Cooking Chat"
-
-OPTION 3 - Shortcut:
-• Press Ctrl+Shift+B (Chrome) to show install button
-
-💡 Tips for Chrome Desktop:
-• Use the app for at least 30 seconds
-• Refresh the page after using it
-• The 📱 icon appears near the bookmark star` + 
-(isChrome ? `
-
-🔧 Debug Command (in Console):
-Copy & paste this in DevTools Console:
-localStorage.setItem('pwa-engagement-time', '60'); location.reload();` : '');
-        } else {
-          guide = `📱 Install this app:
-1. Look for install icon (📱) in address bar
-2. Check browser menu for "Install" option
-3. Some browsers require using app for 30+ seconds first`;
-        }
-        
-        alert('📱 How to Install Smart Cooking Chat:\n\n' + guide);
       }
       
       // Check if already installed as PWA
@@ -505,32 +264,48 @@ localStorage.setItem('pwa-engagement-time', '60'); location.reload();` : '');
         console.log('📄 Manifest:', document.querySelector('link[rel="manifest"]') !== null);
         console.log('👤 User Agent:', navigator.userAgent);
         
-        // Check if already installed
-        if (!checkIfInstalled()) {
-          console.log('🌐 Running in browser mode - PWA install available');
+        // Check Chrome Desktop specific flags
+        const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+        const isDesktop = !/Mobile|Android/i.test(navigator.userAgent);
+        
+        if (isChrome && isDesktop) {
+          console.log('💻 Chrome Desktop detected');
+          console.log('📱 Install icon will appear in address bar when:');
+          console.log('1. You use the app for 30+ seconds');
+          console.log('2. You visit at least twice');
+          console.log('3. There\'s 5+ minutes between visits');
           
-          // Show install button if not hidden
-          if (shouldShowInstallButton()) {
-            setTimeout(() => {
-              showInstallButton();
-            }, 2000);
-          }
-          
-          // Force Chrome Desktop install icon detection
-          const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-          const isDesktop = !/Mobile|Android/i.test(navigator.userAgent);
-          
-          if (isChrome && isDesktop) {
-            console.log('💻 Chrome Desktop detected - optimizing for PWA install');
-            
-            // Simulate engagement to trigger address bar icon
-            setTimeout(() => {
-              simulateUserEngagement();
-              forceChromeDesktopInstallIcon();
-            }, 1000);
-          }
+          // Track engagement time
+          trackEngagement();
         }
       });
+      
+      // Track user engagement to trigger Chrome Desktop install icon
+      function trackEngagement() {
+        let engagementTime = parseInt(localStorage.getItem('pwa-engagement-time') || '0');
+        let visitCount = parseInt(localStorage.getItem('pwa-visit-count') || '0');
+        const lastVisit = localStorage.getItem('pwa-last-visit');
+        const now = Date.now();
+        
+        // Increment visit count if last visit was more than 5 minutes ago
+        if (!lastVisit || (now - parseInt(lastVisit)) > 5 * 60 * 1000) {
+          visitCount++;
+          localStorage.setItem('pwa-visit-count', visitCount.toString());
+        }
+        
+        localStorage.setItem('pwa-last-visit', now.toString());
+        
+        console.log(`📊 Engagement: ${visitCount} visits, ${engagementTime}s total`);
+        
+        // Start tracking time on page
+        const startTime = Date.now();
+        window.addEventListener('beforeunload', () => {
+          const timeOnPage = Math.floor((Date.now() - startTime) / 1000);
+          engagementTime += timeOnPage;
+          localStorage.setItem('pwa-engagement-time', engagementTime.toString());
+          console.log(`⏱️ Added ${timeOnPage}s to engagement (total: ${engagementTime}s)`);
+        });
+      }
       
       // Add global install trigger function
       window.triggerPWAInstall = function() {
@@ -541,24 +316,37 @@ localStorage.setItem('pwa-engagement-time', '60'); location.reload();` : '');
         }
       };
       
-      // Add reset function to console
-      window.resetInstallButton = function() {
-        resetInstallButtonPreference();
-        alert('Install button preference reset. Button will show on next page load.');
-        location.reload();
-      };
+      function showInstallGuide() {
+        alert('📱 To install:\n1. Look for 📱 icon in Chrome address bar\n2. OR Click ⋮ menu → "Install Smart Cooking Chat"\n3. May need to use app for 30+ seconds first');
+      }
       
-      // Debug function to force install button
-      window.showInstallButtonNow = function() {
-        showInstallButton();
+      // Debug function to force Chrome Desktop install icon
+      window.forceChromeInstallIcon = function() {
+        const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+        const isDesktop = !/Mobile|Android/i.test(navigator.userAgent);
+        
+        if (isChrome && isDesktop) {
+          // Simulate engagement criteria
+          localStorage.setItem('pwa-engagement-time', '60');
+          localStorage.setItem('pwa-visit-count', '3');
+          
+          console.log('🔧 Simulated engagement criteria met');
+          console.log('🔄 Refresh page to potentially trigger install icon');
+          
+          if (confirm('Engagement criteria simulated. Refresh page to potentially trigger Chrome install icon?')) {
+            location.reload();
+          }
+        } else {
+          alert('This only works on Chrome Desktop');
+        }
       };
       
       // Show debug info in console
       console.log('%c🔧 PWA Debug Commands Available:', 'color: #FDE047; font-weight: bold; font-size: 14px');
       console.log('• triggerPWAInstall() - Trigger install prompt');
-      console.log('• showInstallButtonNow() - Show install button');
-      console.log('• resetInstallButton() - Reset hide preference');
-      console.log('• window.deferredPrompt - Check if install prompt available');
+      console.log('• forceChromeInstallIcon() - Force Chrome Desktop install icon');
+      console.log('• resetPWAInstallButton() - Reset hidden button preference');
+      console.log('• window.deferredPrompt - Check install prompt availability');
     </script>
   </body>
 </html>
