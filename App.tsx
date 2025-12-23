@@ -33,6 +33,16 @@ const App: React.FC = () => {
     setMessages(history);
   }, []);
 
+  const handleLogout = () => {
+  // ১। কুকি মুছে দাও
+  setCookie('user_mobile', '', -1); // expire the cookie
+  // ২। ইউজার স্টেট রিসেট
+  setUser(null);
+  setMessages([]);
+  // ৩। লগইন মডাল খোলা
+  setIsLoginModalOpen(true);
+};
+
   const handleSendMessage = async (text: string) => {
     if (!user) return;
 
@@ -72,7 +82,16 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-mildBg dark:bg-darkMildBg transition-colors duration-300">
-      <Header />
+      <Header>
+        {user && (
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+          >
+            Switch User
+          </button>
+        )}
+      </Header>
       
       <main className="flex-1 flex flex-col relative w-full max-w-4xl mx-auto overflow-hidden">
         {/* Decorative elements */}

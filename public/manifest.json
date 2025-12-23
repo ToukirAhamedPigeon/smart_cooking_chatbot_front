@@ -1,0 +1,20 @@
+{
+  "short_name": "SmartCookingChat",
+  "name": "Smart Cooking Customer Support Chatbot",
+  "icons": [
+    {
+      "src": "favicon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "favicon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff3e0",
+  "theme_color": "#D2691E"
+}
