@@ -1,20 +1,42 @@
 {
   "short_name": "SmartCookingChat",
   "name": "Smart Cooking Customer Support Chatbot",
+  "description": "AI-powered cooking assistant and customer support",
   "icons": [
     {
       "src": "/favicon-192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "/favicon-512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon-144.png",
+      "type": "image/png",
+      "sizes": "144x144",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFBEB",
-  "theme_color": "#D2691E"
+  "theme_color": "#D2691E",
+  "scope": "/",
+  "orientation": "portrait-primary",
+  "categories": ["food", "cooking", "lifestyle", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Ask Cooking Question",
+      "short_name": "Ask",
+      "description": "Get cooking help instantly",
+      "url": "/?shortcut=ask",
+      "icons": [{ "src": "/favicon-96.png", "sizes": "96x96" }]
+    }
+  ]
 }

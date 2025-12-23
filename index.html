@@ -74,6 +74,48 @@
         }
       }
     </script>
+    <script>
+      // Force PWA install button to appear
+      setTimeout(() => {
+        console.log('🔧 FORCING PWA INSTALL BUTTON VISIBLE');
+        
+        // Check if button exists
+        const checkButton = setInterval(() => {
+          const button = document.querySelector('[title*="Install"]');
+          if (button) {
+            console.log('✅ Install button found:', button);
+            clearInterval(checkButton);
+          } else {
+            console.log('🔍 Looking for install button...');
+            
+            // Create fallback button if none exists
+            const fallbackButton = document.createElement('button');
+            fallbackButton.innerHTML = '📱 INSTALL APP';
+            fallbackButton.style.cssText = `
+              position: fixed;
+              bottom: 20px;
+              right: 20px;
+              background: linear-gradient(45deg, #FFD700, #FF8C00);
+              color: black;
+              padding: 12px 20px;
+              border-radius: 25px;
+              font-weight: bold;
+              border: none;
+              box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+              z-index: 999999;
+              cursor: pointer;
+              animation: bounce 2s infinite;
+            `;
+            fallbackButton.onclick = function() {
+              alert('To install: Use browser menu (⋮) → "Install app" or check address bar for install icon 📱');
+            };
+            document.body.appendChild(fallbackButton);
+            console.log('🛠️ Created fallback install button');
+            clearInterval(checkButton);
+          }
+        }, 1000);
+      }, 3000);
+    </script>
     <link rel="stylesheet" href="/index.css">
   </head>
   <body class="bg-mildBg dark:bg-darkMildBg text-chocolate dark:text-yellow-50 transition-colors duration-300">

@@ -7,7 +7,8 @@ import { Message, User } from './types';
 import { getCookie, setCookie } from './utils/cookies';
 import { fetchChatHistory, sendChatMessage } from './utils/api';
 import PWAInstaller from './PWAInstaller';
-import PWAChecklist from './PWAChecklist';
+// import PWAChecklist from './PWAChecklist';
+import { ChromeInstallHelper } from './ChromeInstallHelper';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -99,7 +100,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-mildBg dark:bg-darkMildBg transition-colors duration-300">
-      <PWAChecklist />
+      <ChromeInstallHelper />
       <Header user={user} onLogout={handleLogout} />
 
       <main className="flex-1 flex flex-col relative w-full max-w-4xl mx-auto overflow-hidden">
