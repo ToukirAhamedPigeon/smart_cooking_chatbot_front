@@ -6,7 +6,7 @@ import { LoginModal } from './components/LoginModal';
 import { Message, User } from './types';
 import { getCookie, setCookie } from './utils/cookies';
 import { fetchChatHistory, sendChatMessage } from './utils/api';
-import PWAInstaller from './components/PWAInstaller';
+import PWAInstaller from './PWAInstaller';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);

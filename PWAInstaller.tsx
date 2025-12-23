@@ -9,7 +9,9 @@ const PWAInstaller: React.FC = () => {
       e.preventDefault();
       setDeferredPrompt(e);
       setShowInstall(true);
+      console.log('beforeinstallprompt fired');
     };
+
     window.addEventListener('beforeinstallprompt', handler);
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
@@ -29,7 +31,7 @@ const PWAInstaller: React.FC = () => {
   return (
     <button
       onClick={handleInstallClick}
-      className="fixed bottom-5 right-5 p-3 rounded-full bg-bakingYellow shadow-lg"
+      className="fixed bottom-5 right-5 p-3 rounded-full bg-bakingYellow text-black shadow-lg hover:bg-yellow-400 transition"
       title="Install Smart Cooking Chat"
     >
       Install App

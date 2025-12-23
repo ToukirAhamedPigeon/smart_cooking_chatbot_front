@@ -1,36 +1,32 @@
-// public/service-worker.js
-
-console.log('Service Worker loaded');
+const CACHE_NAME = 'smart-cooking-cache-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/favicon-192.png',
+  '/favicon-512.png',
+  '/offline.html'
+];
 
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...');
-  self.skipWaiting(); // activate immediately
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activated');
-  self.clients.claim(); // take control immediately
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.open('static-v1').then(cache =>
-      cache.match(event.request).then(response => {
-        // Return cached response if available
-        if (response) return response;
-
-        // Otherwise fetch from network and cache it
-        return fetch(event.request).then(networkResponse => {
-          // Only cache successful GET requests
-          if (event.request.method === 'GET' && networkResponse.status === 200) {
-            cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        }).catch(() => {
-          // Optionally return a fallback for failed requests
-          return caches.match('/offline.html'); // optional offline page
-        });
-      })
-    )
+    caches.match(event.request)
+      .then(response => response || fetch(event.request).then(fetchRes => {
+        if (event.request.method === 'GET') {
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, fetchRes.clone()));
+        }
+        return fetchRes;
+      })).catch(() => caches.match('/offline.html'))
   );
 });
