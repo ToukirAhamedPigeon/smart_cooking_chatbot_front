@@ -1,89 +1,40 @@
-export function register(config) {
-  if ('serviceWorker' in navigator) {
-    // Use window.location for localhost or production
-    const publicUrl = new URL(process.env.PUBLIC_URL || '', window.location.href);
-    if (publicUrl.origin !== window.location.origin) {
-      return;
-    }
+// Add this function
+function isPWAInstallable() {
+  // Check if we're on a compatible browser
+  const isChrome = /chrome|crios/i.test(navigator.userAgent);
+  const isEdge = /edg/i.test(navigator.userAgent);
+  const isFirefox = /firefox/i.test(navigator.userAgent);
+  
+  // Check if we have HTTPS (except localhost)
+  const isSecure = window.location.protocol === 'https:' || 
+                   window.location.hostname === 'localhost';
+  
+  // Check if we have service worker
+  const hasServiceWorker = 'serviceWorker' in navigator;
+  
+  return (isChrome || isEdge || isFirefox) && isSecure && hasServiceWorker;
+}
 
+// Then in your register function:
+export function register() {
+  if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       const swUrl = `${process.env.PUBLIC_URL || ''}/service-worker.js`;
-
-      if (isLocalhost) {
-        checkValidServiceWorker(swUrl, config);
-        navigator.serviceWorker.ready.then(() => {
-          console.log('Service worker is ready.');
-        });
-      } else {
-        registerValidSW(swUrl, config);
-      }
-    });
-  }
-}
-
-function registerValidSW(swUrl, config) {
-  navigator.serviceWorker
-    .register(swUrl)
-    .then((registration) => {
-      console.log('SW registered: ', registration);
       
-      registration.onupdatefound = () => {
-        const installingWorker = registration.installing;
-        if (installingWorker == null) {
-          return;
-        }
-        installingWorker.onstatechange = () => {
-          if (installingWorker.state === 'installed') {
-            if (navigator.serviceWorker.controller) {
-              console.log('New content is available; please refresh.');
-            } else {
-              console.log('Content is cached for offline use.');
-            }
-          }
-        };
-      };
-    })
-    .catch((error) => {
-      console.error('Error during service worker registration:', error);
-    });
-}
-
-function isLocalhost() {
-  return ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname);
-}
-
-function checkValidServiceWorker(swUrl, config) {
-  fetch(swUrl, {
-    headers: { 'Service-Worker': 'script' },
-  })
-    .then((response) => {
-      const contentType = response.headers.get('content-type');
-      if (
-        response.status === 404 ||
-        (contentType != null && contentType.indexOf('javascript') === -1)
-      ) {
-        navigator.serviceWorker.ready.then((registration) => {
-          registration.unregister().then(() => {
-            window.location.reload();
+      // Only register if PWA is installable
+      if (isPWAInstallable()) {
+        navigator.serviceWorker
+          .register(swUrl)
+          .then(registration => {
+            console.log('SW registered on compatible browser:', registration);
+            
+            // Force update check
+            registration.update();
+          })
+          .catch(error => {
+            console.log('SW registration failed:', error);
           });
-        });
-      } else {
-        registerValidSW(swUrl, config);
       }
-    })
-    .catch(() => {
-      console.log('No internet connection found. App is running in offline mode.');
     });
-}
-
-export function unregister() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready
-      .then((registration) => {
-        registration.unregister();
-      })
-      .catch((error) => {
-        console.error(error.message);
-      });
   }
 }

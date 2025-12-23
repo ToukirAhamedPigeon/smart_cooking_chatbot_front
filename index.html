@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="description" content="Smart Cooking Customer Support Chatbot">
+    <meta name="description" content="Smart Cooking Customer Support Chatbot - AI-powered cooking assistant">
     <meta name="application-name" content="SmartCookingChat">
     
     <!-- PWA Manifest -->
@@ -20,6 +20,8 @@
     
     <!-- Icons -->
     <link rel="icon" href="/favicon-192.png" type="image/png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
     <link rel="apple-touch-icon" href="/favicon-192.png">
     
     <!-- Safari Pinned Tab Icon -->
@@ -49,6 +51,8 @@
       @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
       body {
         font-family: 'Outfit', sans-serif;
+        margin: 0;
+        padding: 0;
       }
       .chat-scrollbar::-webkit-scrollbar {
         width: 6px;
@@ -63,6 +67,29 @@
       .dark .chat-scrollbar::-webkit-scrollbar-thumb {
         background: rgba(253, 224, 71, 0.1);
       }
+      
+      /* Bounce animation for install button */
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {
+          transform: translateY(0);
+        }
+        40% {
+          transform: translateY(-10px);
+        }
+        60% {
+          transform: translateY(-5px);
+        }
+      }
+      
+      /* Pulse animation */
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
     </style>
     <script type="importmap">
       {
@@ -74,48 +101,6 @@
         }
       }
     </script>
-    <script>
-      // Force PWA install button to appear
-      setTimeout(() => {
-        console.log('🔧 FORCING PWA INSTALL BUTTON VISIBLE');
-        
-        // Check if button exists
-        const checkButton = setInterval(() => {
-          const button = document.querySelector('[title*="Install"]');
-          if (button) {
-            console.log('✅ Install button found:', button);
-            clearInterval(checkButton);
-          } else {
-            console.log('🔍 Looking for install button...');
-            
-            // Create fallback button if none exists
-            const fallbackButton = document.createElement('button');
-            fallbackButton.innerHTML = '📱 INSTALL APP';
-            fallbackButton.style.cssText = `
-              position: fixed;
-              bottom: 20px;
-              right: 20px;
-              background: linear-gradient(45deg, #FFD700, #FF8C00);
-              color: black;
-              padding: 12px 20px;
-              border-radius: 25px;
-              font-weight: bold;
-              border: none;
-              box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-              z-index: 999999;
-              cursor: pointer;
-              animation: bounce 2s infinite;
-            `;
-            fallbackButton.onclick = function() {
-              alert('To install: Use browser menu (⋮) → "Install app" or check address bar for install icon 📱');
-            };
-            document.body.appendChild(fallbackButton);
-            console.log('🛠️ Created fallback install button');
-            clearInterval(checkButton);
-          }
-        }, 1000);
-      }, 3000);
-    </script>
     <link rel="stylesheet" href="/index.css">
   </head>
   <body class="bg-mildBg dark:bg-darkMildBg text-chocolate dark:text-yellow-50 transition-colors duration-300">
@@ -124,17 +109,232 @@
     
     <!-- PWA Installation Script -->
     <script>
-      // Log PWA readiness
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          console.log('PWA: Service Worker supported');
-        });
+      // Store PWA install event globally
+      window.deferredPrompt = null;
+      
+      // Listen for beforeinstallprompt event
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('🎉 beforeinstallprompt event fired by browser!');
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later
+        window.deferredPrompt = e;
+        
+        // Dispatch a custom event for React to catch
+        const event = new CustomEvent('pwa-install-available', { detail: e });
+        window.dispatchEvent(event);
+        
+        // Show notification that app can be installed
+        showInstallNotification();
+      });
+      
+      // Listen for app installed event
+      window.addEventListener('appinstalled', (evt) => {
+        console.log('✅ App was installed successfully!');
+        window.deferredPrompt = null;
+        hideInstallNotification();
+        
+        // Show success message
+        setTimeout(() => {
+          alert('🎉 Smart Cooking Chat installed successfully!\n\nThe app is now available on your home screen or desktop.');
+        }, 1000);
+      });
+      
+      // Function to show install notification
+      function showInstallNotification() {
+        console.log('📱 PWA install is available');
+        
+        // Create a subtle notification in corner
+        const notification = document.createElement('div');
+        notification.id = 'pwa-install-notification';
+        notification.innerHTML = `
+          <div style="
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: linear-gradient(45deg, #FDE047, #D2691E);
+            color: black;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 99998;
+            animation: pulse 2s infinite;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+          ">
+            <svg style="width: 20px; height: 20px;" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M19,9H16V3H9V9H5L12,16L19,9M5,18V20H19V18H5Z"/>
+            </svg>
+            <span>Tap to Install App</span>
+          </div>
+        `;
+        
+        notification.onclick = function() {
+          if (window.deferredPrompt) {
+            window.deferredPrompt.prompt();
+          } else {
+            showInstallGuide();
+          }
+        };
+        
+        document.body.appendChild(notification);
       }
       
-      // Log display mode
+      // Function to hide install notification
+      function hideInstallNotification() {
+        const notification = document.getElementById('pwa-install-notification');
+        if (notification) {
+          notification.remove();
+        }
+      }
+      
+      // Show install guide
+      function showInstallGuide() {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isDesktop = !isMobile;
+        const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+        const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        
+        let guide = '';
+        
+        if (isIOS) {
+          guide = `📱 Install on iOS:
+1. Tap the Share button (📤) at bottom
+2. Scroll down → "Add to Home Screen"
+3. Tap "Add" in top right
+4. App will appear on home screen!`;
+        } else if (isMobile && isChrome) {
+          guide = `📱 Install on Android Chrome:
+1. Tap ⋮ menu in top right
+2. Select "Add to Home screen"
+3. Tap "Add" to install`;
+        } else if (isDesktop && isChrome) {
+          guide = `💻 Install on Chrome Desktop:
+1. Look for install icon (📱) in address bar
+2. OR Click ⋮ menu → "Install Smart Cooking Chat"
+3. OR Press Ctrl+Shift+B to show install button`;
+        } else {
+          guide = `📱 Install this app:
+1. Look for install icon (📱) in address bar
+2. Check browser menu for "Install" option
+3. Some browsers require using app for 30+ seconds first`;
+        }
+        
+        alert('📱 How to Install Smart Cooking Chat:\n\n' + guide);
+      }
+      
+      // Check if already installed as PWA
+      function checkIfInstalled() {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        const isFullscreen = window.navigator.standalone === true;
+        
+        if (isStandalone || isFullscreen) {
+          console.log('📱 App is already installed as PWA');
+          return true;
+        }
+        return false;
+      }
+      
+      // Initialize PWA detection
       window.addEventListener('DOMContentLoaded', () => {
-        console.log('Display mode:', window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser');
+        console.log('🚀 PWA Initialization');
+        console.log('🌐 Display mode:', window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser');
+        console.log('🔒 HTTPS:', window.location.protocol === 'https:');
+        console.log('⚙️ Service Worker:', 'serviceWorker' in navigator);
+        console.log('📄 Manifest:', document.querySelector('link[rel="manifest"]') !== null);
+        
+        // Check if already installed
+        if (!checkIfInstalled()) {
+          console.log('🌐 Running in browser mode - PWA install available');
+          
+          // Force show install button after delay (for testing/dev)
+          const isLocalhost = window.location.hostname === 'localhost' || 
+                             window.location.hostname === '127.0.0.1';
+          
+          if (isLocalhost) {
+            console.log('🛠️ Localhost detected - simulating install availability');
+            setTimeout(() => {
+              if (!window.deferredPrompt) {
+                console.log('🛠️ Simulating beforeinstallprompt for testing');
+                const event = new Event('beforeinstallprompt');
+                window.dispatchEvent(event);
+              }
+            }, 3000);
+          }
+        }
       });
+      
+      // Add global install trigger function
+      window.triggerPWAInstall = function() {
+        if (window.deferredPrompt) {
+          window.deferredPrompt.prompt();
+        } else {
+          showInstallGuide();
+        }
+      };
+      
+      // Create fallback install button after 5 seconds if no React button appears
+      setTimeout(() => {
+        if (!document.querySelector('[title*="Install"], [aria-label*="Install"], #fallback-install-button')) {
+          console.log('🛠️ Creating fallback install button');
+          
+          const fallbackButton = document.createElement('button');
+          fallbackButton.id = 'fallback-install-button';
+          fallbackButton.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <svg style="width: 24px; height: 24px;" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M19,9H16V3H9V9H5L12,16L19,9M5,18V20H19V18H5Z"/>
+              </svg>
+              <div style="text-align: left;">
+                <div style="font-weight: bold; font-size: 16px;">INSTALL APP</div>
+                <div style="font-size: 12px; opacity: 0.9;">Add to Home Screen</div>
+              </div>
+            </div>
+          `;
+          
+          fallbackButton.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #FDE047, #D2691E);
+            color: black;
+            padding: 15px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            border: none;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.3);
+            z-index: 99999;
+            cursor: pointer;
+            animation: bounce 2s infinite;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255,255,255,0.3);
+          `;
+          
+          fallbackButton.onmouseover = function() {
+            this.style.transform = 'scale(1.05)';
+            this.style.boxShadow = '0 8px 30px rgba(0,0,0,0.4)';
+          };
+          
+          fallbackButton.onmouseout = function() {
+            this.style.transform = 'scale(1)';
+            this.style.boxShadow = '0 6px 25px rgba(0,0,0,0.3)';
+          };
+          
+          fallbackButton.onclick = function() {
+            if (window.deferredPrompt) {
+              window.deferredPrompt.prompt();
+            } else {
+              showInstallGuide();
+            }
+          };
+          
+          document.body.appendChild(fallbackButton);
+        }
+      }, 5000);
     </script>
   </body>
 </html>

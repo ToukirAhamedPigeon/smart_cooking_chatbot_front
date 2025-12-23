@@ -1,94 +1,137 @@
 import React, { useEffect, useState } from 'react';
 
 const PWAInstaller: React.FC = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showInstall, setShowInstall] = useState(true); // Start with true
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstall, setShowInstall] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  const [browserSupportsPWA, setBrowserSupportsPWA] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
-    console.log('🔧 PWA Installer Initialized');
+    console.log('🔧 PWA Installer: Initializing...');
     
-    // Check if already installed
-    const checkInstallStatus = () => {
-      const standalone = window.matchMedia('(display-mode: standalone)').matches;
-      const fullscreen = (window.navigator as any).standalone === true;
-      const installed = standalone || fullscreen;
+    // Detect device type
+    const detectDevice = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const mobile = /iphone|ipad|ipod|android|blackberry|windows phone/g.test(userAgent);
+      const desktop = !mobile;
       
-      console.log('📱 Installation Status:', { 
-        installed, 
-        displayMode: standalone ? 'standalone' : 'browser',
-        isIOSPWA: fullscreen
+      console.log('📱 Device Detection:', { mobile, desktop, userAgent });
+      setIsMobile(mobile);
+      setIsDesktop(desktop);
+      
+      return { mobile, desktop };
+    };
+
+    // Check if app is already installed (running as PWA)
+    const checkIfInstalled = () => {
+      // Method 1: Check display mode
+      const displayMode = window.matchMedia('(display-mode: standalone)').matches;
+      
+      // Method 2: Check for iOS standalone mode
+      const iosStandalone = (window.navigator as any).standalone === true;
+      
+      // Method 3: Check for standalone query parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasStandaloneParam = urlParams.get('standalone') === 'true';
+      
+      const installed = displayMode || iosStandalone || hasStandaloneParam;
+      
+      console.log('📊 Installation Check:', {
+        displayMode,
+        iosStandalone,
+        hasStandaloneParam,
+        installed
       });
       
       setIsStandalone(installed);
       return installed;
     };
 
-    // Check browser capabilities
-    const checkBrowserSupport = () => {
-      const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-      const isEdge = /Edg/.test(navigator.userAgent);
-      const isSamsung = /SamsungBrowser/.test(navigator.userAgent);
-      const supportsPWA = isChrome || isEdge || isSamsung;
+    // Real beforeinstallprompt event handler
+    const handleBeforeInstallPrompt = (e: any) => {
+      console.log('🎉 BROWSER: beforeinstallprompt event fired!');
+      console.log('Platforms:', e.platforms);
       
-      console.log('🌐 Browser Support:', {
-        isChrome, isEdge, isSamsung, supportsPWA
-      });
-      
-      setBrowserSupportsPWA(supportsPWA);
-      return supportsPWA;
-    };
-
-    // Real beforeinstallprompt handler
-    const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
-      console.log('🎉 REAL beforeinstallprompt fired by browser!');
+      // Prevent Chrome's mini-infobar
       e.preventDefault();
+      
+      // Save the event for later use
       setDeferredPrompt(e);
+      
+      // Show our install button
       setShowInstall(true);
     };
 
-    // Handle app installed
+    // Check when app is installed
     const handleAppInstalled = () => {
-      console.log('✅ App installed!');
+      console.log('✅ App was installed successfully!');
       setIsStandalone(true);
       setShowInstall(false);
+      setDeferredPrompt(null);
     };
 
     // Run initial checks
-    const alreadyInstalled = checkInstallStatus();
-    const supportsPWA = checkBrowserSupport();
+    detectDevice();
+    const alreadyInstalled = checkIfInstalled();
     
-    // Only add event listeners if not installed and browser supports PWA
-    if (!alreadyInstalled && supportsPWA) {
-      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+    console.log('📋 Initial State:', {
+      alreadyInstalled,
+      shouldShowButton: !alreadyInstalled,
+      isDesktop,
+      isMobile
+    });
+
+    // Only set up event listeners if NOT already installed
+    if (!alreadyInstalled) {
+      console.log('📝 Setting up PWA event listeners...');
+      
+      // Listen for beforeinstallprompt event
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      
+      // Listen for app installed event
       window.addEventListener('appinstalled', handleAppInstalled);
       
-      // FOR DEVELOPMENT/TESTING: Always show button after delay
-      const isDev = window.location.hostname === 'localhost' || 
-                    window.location.hostname === '127.0.0.1';
+      // For DEVELOPMENT: Always show button after delay for testing
+      const isDevelopment = 
+        window.location.hostname === 'localhost' || 
+        window.location.hostname === '127.0.0.1' ||
+        process.env.NODE_ENV === 'development';
       
-      if (isDev) {
-        console.log('🛠️ Development mode detected');
-        // Show button immediately in dev
-        setShowInstall(true);
-      } else {
-        // In production, show button if PWA criteria are met
-        const hasServiceWorker = 'serviceWorker' in navigator;
-        const hasManifest = document.querySelector('link[rel="manifest"]') !== null;
-        const isHTTPS = window.location.protocol === 'https:';
+      if (isDevelopment) {
+        console.log('🛠️ DEVELOPMENT MODE: Forcing install button to appear');
         
-        if (hasServiceWorker && hasManifest && isHTTPS) {
-          console.log('✅ PWA criteria met, showing install button');
+        // Show button immediately in dev
+        setTimeout(() => {
+          if (!showInstall) {
+            console.log('🛠️ DEV: Showing install button (simulated)');
+            setShowInstall(true);
+          }
+        }, 2000);
+      }
+      
+      // For PRODUCTION: Show button if user is on a compatible browser
+      // even if beforeinstallprompt hasn't fired yet
+      if (!isDevelopment) {
+        const isChrome = /chrome|crios/i.test(navigator.userAgent);
+        const isEdge = /edg/i.test(navigator.userAgent);
+        const isSafari = /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
+        const isFirefox = /firefox|fxios/i.test(navigator.userAgent);
+        
+        const supportsPWA = isChrome || isEdge || isSafari || isFirefox;
+        
+        if (supportsPWA) {
+          console.log('✅ Browser supports PWA, showing install button');
           setShowInstall(true);
         }
       }
 
       return () => {
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         window.removeEventListener('appinstalled', handleAppInstalled);
       };
-    } else if (alreadyInstalled) {
+    } else {
+      console.log('📱 App already installed, hiding install button');
       setShowInstall(false);
     }
   }, []);
@@ -96,182 +139,261 @@ const PWAInstaller: React.FC = () => {
   const handleInstallClick = async () => {
     console.log('🖱️ Install button clicked');
     
-    // If we have a real deferred prompt from browser
     if (deferredPrompt) {
       try {
-        console.log('📱 Using browser install prompt');
-        await deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`📝 User choice: ${outcome}`);
+        console.log('📱 Using browser install prompt...');
         
-        if (outcome === 'accepted') {
-          console.log('🎊 User accepted installation!');
+        // Show the native install prompt
+        deferredPrompt.prompt();
+        
+        // Wait for user choice
+        const choiceResult = await deferredPrompt.userChoice;
+        console.log('📝 User choice result:', choiceResult);
+        
+        if (choiceResult.outcome === 'accepted') {
+          console.log('✅ User accepted installation');
           setIsStandalone(true);
+        } else {
+          console.log('❌ User declined installation');
         }
         
+        // Clear the deferred prompt
         setDeferredPrompt(null);
         setShowInstall(false);
-        return;
+        
       } catch (error) {
-        console.error('❌ Error with browser prompt:', error);
+        console.error('❌ Error showing install prompt:', error);
+        showManualInstallGuide();
       }
+    } else {
+      console.log('⚠️ No deferred prompt, showing manual guide');
+      showManualInstallGuide();
     }
-    
-    // Fallback: Show manual installation guide
-    showManualInstallGuide();
   };
 
   const showManualInstallGuide = () => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    const isAndroid = /Android/.test(navigator.userAgent);
-    const isDesktop = !isIOS && !isAndroid;
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isChrome = /chrome|crios/.test(userAgent);
+    const isFirefox = /firefox|fxios/.test(userAgent);
+    const isSafari = /safari/.test(userAgent) && !/chrome/.test(userAgent);
+    const isEdge = /edg/.test(userAgent);
+    const isOpera = /opr/.test(userAgent);
     
     let guide = '';
+    let browserName = 'your browser';
     
-    if (isIOS) {
-      guide = `📱 Install on iOS Safari:
-1. Tap the Share button (📤) at bottom
-2. Scroll down → "Add to Home Screen"
-3. Tap "Add" in top right
-4. App will appear on home screen!`;
-    } else if (isAndroid) {
-      guide = `📱 Install on Android:
-1. Tap ⋮ menu in top right
-2. Look for "Install app" or "Add to Home Screen"
-3. Tap "Install" to add to home screen
+    if (isChrome) {
+      browserName = 'Chrome';
+      guide = `To install this app in Chrome ${isDesktop ? 'Desktop' : 'Mobile'}:
 
-💡 Tip: Use the app for 30+ seconds to see auto-install prompt`;
-    } else if (isDesktop) {
-      guide = `💻 Install on Desktop:
-1. Look for install icon (📱) in address bar
-2. OR Click ⋮ menu → "Install Smart Cooking Chat"
-3. OR Press Ctrl+Shift+B to show install button
+${isDesktop ? `
+🔧 Chrome Desktop:
+1. Look for the install icon (📱) in the address bar
+   OR
+2. Click the three dots menu (⋮) → "Install Smart Cooking Chat"
+   OR
+3. Press Ctrl+Shift+B to show the install button
 
-🔧 For Chrome Desktop:
-• Click the puzzle piece icon in address bar
-• Look for "Install" button`;
+💡 Tip: Sometimes you need to:
+• Use the app for 30+ seconds
+• Refresh the page
+• Check Chrome menu for "Create shortcut"` : `
+📱 Chrome Mobile:
+1. Tap the three dots menu (⋮) in top right
+2. Select "Add to Home screen" or "Install app"
+3. Tap "Add" or "Install"
+
+💡 If you don't see the option:
+• Use the app for a minute
+• Close and reopen Chrome
+• Check address bar for install icon`}`;
+    } else if (isFirefox) {
+      browserName = 'Firefox';
+      guide = `To install in Firefox:
+1. Tap the menu (≡) in top right
+2. Select "Install" or "Add to Home Screen"`;
+    } else if (isSafari) {
+      browserName = 'Safari';
+      guide = `To install in Safari (iOS/Mac):
+1. Tap the Share button (📤)
+2. Scroll down and tap "Add to Home Screen"
+3. Tap "Add"`;
+    } else if (isEdge) {
+      browserName = 'Edge';
+      guide = `To install in Microsoft Edge:
+1. Tap the menu (...) in bottom center
+2. Select "Add to Home screen"`;
+    } else {
+      guide = `To install this app:
+1. Look for an install icon (📱) in your browser's address bar
+2. Or check the browser menu for "Install" or "Add to Home Screen"
+3. Some browsers require using the app for 30+ seconds first`;
     }
     
-    alert(guide);
+    const message = `📱 Install Smart Cooking Chat in ${browserName}:\n\n${guide}`;
+    alert(message);
     
-    // Also show in console for easy copying
-    console.log('📋 Installation Guide:\n' + guide);
+    // Also log to console for reference
+    console.log('📋 Installation Guide:\n', message);
   };
 
-  // Debug info component
-  const DebugInfo = () => {
+  // Debug panel - only in development
+  const DebugPanel = () => {
     if (process.env.NODE_ENV !== 'development') return null;
     
     return (
-      <div className="fixed top-5 left-5 bg-black/90 text-green-400 p-3 rounded-lg text-xs max-w-md z-50 border border-green-800 shadow-2xl">
-        <div className="font-bold mb-2 flex items-center">
-          <span className="mr-2">🔧 PWA DEBUG</span>
+      <div className="fixed top-4 left-4 bg-gray-900 text-green-400 p-3 rounded-lg text-xs max-w-md z-50 border border-gray-700 shadow-2xl">
+        <div className="font-bold mb-2 flex items-center justify-between">
+          <span>🔧 PWA DEBUG PANEL</span>
           <button 
-            onClick={() => navigator.clipboard.writeText(JSON.stringify({
-              url: window.location.href,
-              userAgent: navigator.userAgent,
-              pwaReady: browserSupportsPWA && !isStandalone
-            }, null, 2))}
-            className="text-xs bg-gray-800 px-2 py-1 rounded"
+            onClick={() => {
+              const debugInfo = {
+                url: window.location.href,
+                showInstall,
+                isStandalone,
+                isMobile,
+                isDesktop,
+                deferredPrompt: !!deferredPrompt,
+                userAgent: navigator.userAgent,
+                displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser'
+              };
+              navigator.clipboard.writeText(JSON.stringify(debugInfo, null, 2));
+              alert('Debug info copied to clipboard!');
+            }}
+            className="text-xs bg-gray-800 px-2 py-1 rounded hover:bg-gray-700"
           >
-            Copy Info
+            Copy Debug
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-1">
-          <div>Status: {isStandalone ? '📱 INSTALLED' : '🌐 BROWSER'}</div>
-          <div>Show Button: {showInstall ? '✅ YES' : '❌ NO'}</div>
-          <div>Browser PWA: {browserSupportsPWA ? '✅ YES' : '❌ NO'}</div>
-          <div>Deferred Prompt: {deferredPrompt ? '✅ YES' : '❌ NO'}</div>
-          <div>HTTPS: {window.location.protocol === 'https:' ? '✅ YES' : '❌ NO'}</div>
-          <div>Service Worker: {'serviceWorker' in navigator ? '✅ YES' : '❌ NO'}</div>
-          <div>Manifest: {document.querySelector('link[rel="manifest"]') ? '✅ YES' : '❌ NO'}</div>
-          <div>Display Mode: {window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser'}</div>
+        
+        <div className="grid grid-cols-2 gap-2">
+          <div className={`font-bold ${showInstall ? 'text-green-400' : 'text-red-400'}`}>
+            Button: {showInstall ? '✅ SHOWING' : '❌ HIDDEN'}
+          </div>
+          <div className={isStandalone ? 'text-yellow-400' : 'text-blue-400'}>
+            Mode: {isStandalone ? '📱 INSTALLED' : '🌐 BROWSER'}
+          </div>
+          <div className={isDesktop ? 'text-purple-400' : ''}>
+            Device: {isDesktop ? '💻 DESKTOP' : '📱 MOBILE'}
+          </div>
+          <div>
+            Prompt: {deferredPrompt ? '✅ READY' : '❌ NONE'}
+          </div>
+          <div>
+            HTTPS: {window.location.protocol === 'https:' ? '✅' : '❌'}
+          </div>
+          <div>
+            SW: {'serviceWorker' in navigator ? '✅' : '❌'}
+          </div>
         </div>
-        <div className="mt-2 text-gray-400 text-[10px]">
-          {navigator.userAgent}
+        
+        <div className="mt-2 pt-2 border-t border-gray-700">
+          <div className="text-gray-400">User Agent:</div>
+          <div className="text-[10px] truncate">{navigator.userAgent}</div>
         </div>
       </div>
     );
   };
 
-  // Don't show anything if already installed
+  // ========== MAIN LOGIC ==========
+  // If app is already installed as PWA, don't show button
   if (isStandalone) {
-    return <DebugInfo />;
+    console.log('📱 App is installed, not showing install button');
+    return <DebugPanel />;
   }
 
-  // Show install button if conditions are met
-  if (showInstall && browserSupportsPWA) {
+  // If we should show the install button (running in browser)
+  if (showInstall) {
+    console.log('🌐 Showing install button in browser mode');
+    
     return (
       <>
-        <DebugInfo />
+        <DebugPanel />
         <button
           onClick={handleInstallClick}
-          className="fixed bottom-6 right-6 p-4 rounded-xl bg-gradient-to-r from-yellow-500 via-bakingYellow to-orange-500 text-black shadow-2xl hover:shadow-3xl hover:scale-105 active:scale-95 transition-all duration-300 z-50 animate-bounce border-2 border-white/30"
-          title="Install Smart Cooking Chat App - Click for instructions"
-          aria-label="Install application to your device"
+          className="fixed bottom-6 right-6 p-4 rounded-xl bg-gradient-to-r from-yellow-500 via-bakingYellow to-orange-500 text-black font-bold shadow-2xl hover:shadow-3xl hover:scale-105 active:scale-95 transition-all duration-300 z-50 border-2 border-white/50"
+          title="Install Smart Cooking Chat App"
+          aria-label="Install app to your device"
           style={{
-            boxShadow: '0 10px 25px rgba(0,0,0,0.3), 0 0 20px rgba(253, 224, 71, 0.5)'
+            animation: 'bounce 2s infinite',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.4), 0 0 25px rgba(253, 224, 71, 0.6)'
           }}
         >
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <div className="absolute inset-0 bg-white/20 rounded-full animate-ping"></div>
+              <div className="absolute inset-0 bg-white/30 rounded-full animate-ping"></div>
               <svg className="w-8 h-8 relative" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
               </svg>
             </div>
             <div className="text-left">
               <div className="font-extrabold text-lg leading-tight">INSTALL APP</div>
-              <div className="text-xs font-medium opacity-90">Add to Home Screen</div>
+              <div className="text-xs font-medium opacity-90">
+                {isDesktop ? 'Install to Desktop' : 'Add to Home Screen'}
+              </div>
             </div>
             <svg className="w-6 h-6 opacity-80" fill="currentColor" viewBox="0 0 24 24">
               <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
             </svg>
           </div>
-          <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+          
+          {/* Red notification dot */}
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse border-2 border-white"></div>
         </button>
       </>
     );
   }
 
-  // Fallback: Show manual install button for unsupported browsers
-  if (!browserSupportsPWA && !isStandalone) {
-    return (
-      <>
-        <DebugInfo />
-        <button
-          onClick={showManualInstallGuide}
-          className="fixed bottom-6 right-6 p-3 rounded-full bg-blue-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 z-50"
-          title="PWA Installation Guide"
-        >
-          <div className="flex items-center space-x-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-            </svg>
-            <span className="font-semibold">Install Guide</span>
-          </div>
-        </button>
-      </>
-    );
+  // Fallback: If PWA is not supported but we're in browser
+  if (!isStandalone) {
+    const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+    
+    // For iOS Safari, always show install guide since beforeinstallprompt doesn't work
+    if (isIOS) {
+      return (
+        <>
+          <DebugPanel />
+          <button
+            onClick={showManualInstallGuide}
+            className="fixed bottom-6 right-6 p-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 z-50"
+            title="How to install on iOS"
+          >
+            <div className="flex items-center space-x-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <span className="font-semibold">Add to Home Screen</span>
+            </div>
+          </button>
+        </>
+      );
+    }
   }
 
-  return <DebugInfo />;
+  // Default: Just show debug panel
+  return <DebugPanel />;
 };
 
-// Type definitions
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: string[];
-  readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed';
-    platform: string;
-  }>;
-  prompt(): Promise<void>;
-}
-
-declare global {
-  interface WindowEventMap {
-    beforeinstallprompt: BeforeInstallPromptEvent;
+// Add bounce animation to your global CSS
+const styles = `
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
   }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = styles;
+  document.head.appendChild(styleSheet);
 }
 
 export default PWAInstaller;
