@@ -1,6 +1,7 @@
 import { ChatResponse, Message, ChatHistoryAPIResponse } from '../types';
 
-const API_BASE_URL = 'http://localhost:8000';
+// const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://smart-cooking-chatbot-backend.onrender.com';
 
 /**
  * Register a user (call once on app load or first visit)
