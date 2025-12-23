@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { WhiskIcon } from './BakingIllustration';
-import { UserIcon } from '@heroicons/react/24/outline';
+import { UserIcon } from '@heroicons/react/24/outline'; // small icon from heroicons
 import { User } from '../types';
 
 interface HeaderProps {
@@ -11,47 +11,18 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   const [isDark, setIsDark] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstall, setShowInstall] = useState(false);
 
   useEffect(() => {
-    // Dark mode
     const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (isSystemDark) {
       setIsDark(true);
       document.documentElement.classList.add('dark');
     }
-
-    // Listen for PWA install event
-    const handler = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstall(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-    };
   }, []);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle('dark');
-  };
-
-  const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const choiceResult = await deferredPrompt.userChoice;
-    if (choiceResult.outcome === 'accepted') {
-      console.log('PWA installed');
-    } else {
-      console.log('PWA installation dismissed');
-    }
-    setDeferredPrompt(null);
-    setShowInstall(false);
   };
 
   return (
@@ -90,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
           )}
         </button>
 
-        {/* Switch User */}
+        {/* Small Switch User Icon */}
         {user && (
           <button
             onClick={onLogout}
@@ -98,19 +69,6 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
             className="p-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition flex items-center justify-center"
           >
             <UserIcon className="h-5 w-5" />
-          </button>
-        )}
-
-        {/* PWA Install */}
-        {showInstall && (
-          <button
-            onClick={handleInstall}
-            title="Install App"
-            className="p-2 rounded-full bg-green-500 text-white hover:bg-green-600 transition flex items-center justify-center"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v16h16V4H4zm8 2v8m0 0l3-3m-3 3l-3-3" />
-            </svg>
           </button>
         )}
 
