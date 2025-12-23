@@ -100,7 +100,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-mildBg dark:bg-darkMildBg transition-colors duration-300">
-      <ChromeInstallHelper />
+      {/* <ChromeInstallHelper /> */}
       <Header user={user} onLogout={handleLogout} />
 
       <main className="flex-1 flex flex-col relative w-full max-w-4xl mx-auto overflow-hidden">
